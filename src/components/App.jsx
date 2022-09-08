@@ -6,37 +6,47 @@ import '../../node_modules/bootstrap/dist/css/bootstrap.min.css';
 function App() {
   const [rawPosts, setRawPosts] = useState([]);
   const [displayPosts, setDisplayPosts] = useState([]);
-  const [filteredPosts, setFilteredPosts] = useState([]);
+  const [postFiltered, setPostFiltered] = useState([])
   const [load, setLoad] = useState(10);
   const postPerPages = 10;
+  const [defaultPage,setDefaultPage] = useState(true)
 
   useEffect(() => {
-    const fetchData = async () => {
-      const response = await fetch('/api/posts');
-      const data = await response.json();
-      setRawPosts(data.posts);
-      setDisplayPosts(rawPosts.slice(0, load));
-    };
-    fetchData();
-  }, []);
+    fetch('/api/posts')
+      .then((response) => response.json())
+      .then((json) => {
+        setRawPosts(json.posts);
+        setDisplayPosts(json.posts.slice(0, load));
+      })
+      .catch((err) => console.log(err))
+  },[])
 
   const dispPerPage = (dispPost, end) => {
     setDisplayPosts(dispPost.slice(0, end));
   };
 
   const postFilter = (category) => {
-    setLoad(10);
-    const filterPost = rawPosts.filter((post) => {
+    setDefaultPage(false);
+    const filterPost =  rawPosts.filter((post) => {
       return post.categories.find((cat) => cat.name === category);
     });
-    setFilteredPosts(filterPost);
-    setDisplayPosts(filteredPosts.slice(0, load));
+    setLoad(10)
+    setPostFiltered(filterPost);
+    setDisplayPosts(filterPost.slice(0, postPerPages));
   };
 
   const resetFilter = () => {
+    setDefaultPage(true)
+    setLoad(10);
     setDisplayPosts(rawPosts);
     dispPerPage(rawPosts, postPerPages);
   };
+
+  const loadMore = (targetPost) => {
+    dispPerPage(targetPost, postPerPages + load);
+    setLoad(prev => prev + postPerPages)
+    
+  }
   return (
     <>
       <div className="container py-5">
@@ -45,7 +55,7 @@ function App() {
           <div className="col">
             <button
               className="btn btn-primary"
-              onClick={() => postFilter('Ecommerce')}
+              onClick={() =>  postFilter('Ecommerce')}
             >
               Ecommerce
             </button>
@@ -74,22 +84,15 @@ function App() {
               Marketing Analytics
             </button>
           </div>
-          <div className="col">
-            <button
-              className="btn btn-primary"
-              onClick={() => postFilter('Landing Pages')}
-            >
-              Marketing Analytics
-            </button>
-          </div>
+         
         </div>
         <div className="row text-center mt-2 mb-4">
           <div className="col">
             <button
               className="btn btn-primary"
-              onClick={() => postFilter('Survey and Forms')}
+              onClick={() => postFilter('Surveys and Forms')}
             >
-              Survey and Forms
+              Surveys and Forms
             </button>
           </div>
           <div className="col">
@@ -136,15 +139,16 @@ function App() {
             ))}
           </tbody>
         </table>
-        <div className="row">
-          <div>
-            <button className="btn btn-primary">Load More</button>
-          </div>
-          <div>
+        <div className="d-flex justify-content-between">
+          {defaultPage ?
+          <button className="btn btn-primary" onClick={() => loadMore(rawPosts)}>Load More</button>
+          :
+          <button className="btn btn-primary" onClick={() => loadMore(postFiltered)}>Load More</button>
+          }
+
             <button className="btn btn-primary" onClick={() => resetFilter()}>
-              Reset
+              Home
             </button>
-          </div>
         </div>
       </div>
     </>
